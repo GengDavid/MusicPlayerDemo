@@ -1,5 +1,7 @@
 package com.example.geng.musicplayer;
 
+import android.content.Context;
+import android.os.Environment;
 import android.os.Parcel;
 import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
@@ -14,11 +16,16 @@ import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 
 public class MainActivity extends AppCompatActivity {
@@ -36,11 +43,13 @@ public class MainActivity extends AppCompatActivity {
     private Integer status;
     private MusicService musicService;
     public Handler handler = new Handler();
+    public String RootPath = Environment.getExternalStorageDirectory().getPath()+ File.separator+"music";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        copyRawToData(this, R.raw.melt,"melt","mp3");
         verifyStoragePermission(this);
         bindServiceConnection();
         musicService = new MusicService();
@@ -91,6 +100,29 @@ public class MainActivity extends AppCompatActivity {
         playingState = (TextView) findViewById(R.id.playingState);
     }
 
+    public boolean copyRawToData(Context context, int resId, String filename, String filetype){
+        String FolderPath = RootPath;
+        String FilePath = FolderPath + "/" + filename + "." + filetype;
+        File file = new File(FilePath);
+        InputStream inputStream = context.getResources().openRawResource(resId);
+        try{
+            if (!file.exists()){
+                FileOutputStream fileOutputStream = new FileOutputStream(file);
+                byte[] buffer = new byte[inputStream.available()];
+                int length = 0;
+                while ((length = inputStream.read(buffer)) != -1){
+                    fileOutputStream.write(buffer, 0, length);
+                }
+                fileOutputStream.flush();
+                fileOutputStream.close();
+                inputStream.close();
+            }
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     private void updateUI() throws RemoteException{
         switch (status){
@@ -122,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private SimpleDateFormat time = new SimpleDateFormat("mm:ss");
+    //通过IBinder将activity与Service绑定
     private ServiceConnection sc = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -157,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {}
             });
+            //使用handler post runnable对象，到主线程中更新UI
             handler.postDelayed(runnable, 100);
         }
     };
@@ -171,6 +205,7 @@ public class MainActivity extends AppCompatActivity {
         }
         seekBar.setProgress(musicService.mediaPlayer.getCurrentPosition());
         seekBar.setMax(musicService.mediaPlayer.getDuration());
+        //使用handler post runnable对象，到主线程中更新UI
         handler.post(runnable);
         super.onResume();
     }

@@ -3,6 +3,7 @@ package com.example.geng.musicplayer;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Binder;
@@ -10,7 +11,12 @@ import android.os.Environment;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.RemoteException;
+import android.util.Log;
 import android.view.animation.LinearInterpolator;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 
 /**
  * Created by Geng on 2017/11/20.
@@ -19,6 +25,8 @@ import android.view.animation.LinearInterpolator;
 public class MusicService extends Service {
     public static MediaPlayer mediaPlayer = new MediaPlayer();
     public static ObjectAnimator animator;
+    private String folder_path = Environment.getExternalStorageDirectory().getPath()+ File.separator+"music";
+
 
     public final IBinder binder = new MyBinder();
     public class MyBinder extends Binder {
@@ -67,14 +75,14 @@ public class MusicService extends Service {
 
     public MusicService() {
         try {
-            String file_path = Environment.getDataDirectory().getAbsolutePath()+"/melt.mp3";
-            mediaPlayer.setDataSource(file_path);
+            mediaPlayer.setDataSource(folder_path+"/melt.mp3");
             mediaPlayer.prepare();
             mediaPlayer.setLooping(true);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 
     @Override
     public void onDestroy() {
